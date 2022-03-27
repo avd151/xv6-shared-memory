@@ -89,3 +89,9 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_shmget(void){
+	cprintf("In shmget\n");
+	return 0;
+}
