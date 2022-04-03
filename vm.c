@@ -114,6 +114,14 @@ static struct kmap {
  { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices
 };
 
+//Shared Memory Region
+struct sharedMemRegion{
+	int key;
+	int size;
+	void* physicalAddress; //check - single address or array of addresses
+};
+struct sharedMemRegion allSharedMemRegions [SHARED_MEM_REGIONS];
+
 // Set up kernel part of a page table.
 pde_t*
 setupkvm(void)
