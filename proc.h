@@ -32,6 +32,16 @@ struct context {
   uint eip;
 };
 
+
+//Shared Memory Pages
+//Share pages between processes
+#define SHARED_MEM_REGIONS 64
+struct sharedMemPages{
+        int key;
+        void *virtualAddr;
+};
+
+
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
@@ -49,6 +59,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  struct sharedMemPages allSharedPages[SHARED_MEM_REGIONS]; //array of shared pages by the process
 };
 
 // Process memory is laid out contiguously, low addresses first:
