@@ -223,8 +223,8 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
   char *mem;
   uint a;
-
-  if(newsz >= KERNBASE)
+	
+  if(newsz >= HEAPLIMIT) //earlier - newsz >= KERNBASE
     return 0;
   if(newsz < oldsz)
     return oldsz;
@@ -257,6 +257,10 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
   pte_t *pte;
   uint a, pa;
+  
+  if(oldsz >= KERNBASE){
+	  oldsz = HEAPLIMIT; //max heap size = till HEAPLIMIT
+  }
 
   if(newsz >= oldsz)
     return oldsz;
@@ -392,3 +396,8 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 //PAGEBREAK!
 // Blank page.
 
+int sys_shmget(int key, int size, int shmflag)
+{
+	cprintf("In shmget\n");
+	return 0;
+}
