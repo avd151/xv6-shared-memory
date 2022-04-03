@@ -5,6 +5,6 @@
 int
 main(int argc, char *argv[])
 {
-	shmget();
+	shmget(1, 2,3);
  	 exit();
 }

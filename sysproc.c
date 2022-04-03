@@ -90,8 +90,3 @@ sys_uptime(void)
   return xticks;
 }
 
-int
-sys_shmget(void){
-	cprintf("In shmget\n");
-	return 0;
-}
