@@ -38,6 +38,8 @@ struct context {
 #define SHARED_MEM_REGIONS 64
 struct sharedMemPages{
         int key;
+	int id;
+	int valid; //0 = invalid, 1 = valid;
         void *virtualAddr;
 };
 

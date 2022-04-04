@@ -118,6 +118,8 @@ static struct kmap {
 struct sharedMemRegion{
 	int key;
 	int size;
+	int id;
+	int valid; //0 = invalid, 1 = valid
 	void* physicalAddress; //check - single address or array of addresses
 };
 struct sharedMemRegion allSharedMemRegions [SHARED_MEM_REGIONS];
@@ -404,6 +406,21 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 //PAGEBREAK!
 // Blank page.
 
+//Shared Memory Functions 
+
+void shared_memory_init(void){
+	//Iniitialize shared memory region 
+	//Shared memory pages - initialised in proc.c
+	int i = 0;
+	for(i = 0; i < SHARED_MEM_REGIONS; i++){
+		allSharedMemRegions[i].key = -1;
+		allSharedMemRegions[i].valid = 0;
+		allSharedMemRegions[i].id = -1;
+		//check: Initialize physical address to 0
+		allSharedMemRegions[i].physicalAddr = 0;
+}
+
+//shmget
 int sys_shmget(int key, int size, int shmflag)
 {
 	cprintf("In shmget\n");
