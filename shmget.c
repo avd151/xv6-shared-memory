@@ -5,6 +5,10 @@
 int
 main(int argc, char *argv[])
 {
-	shmget(1, 2,3);
- 	 exit();
+	int shmid = shmget(1, 2,3);
+	if(shmid >= 0)
+		printf(1, "shmid = %d\n", shmid);
+	else
+		printf(1, "Error in shmget\n");
+ 	exit();
 }

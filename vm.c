@@ -428,23 +428,24 @@ int shmget_util(int key, int size, int shmflag)
 	//cprintf("In shmget util\n");
 	int notused = -1, notAllocFlag = 0;
 	//no. of pages to allocate
-	int pagesToAlloc = size/PGSIZE + (size%PGSZIE != 0);
+	int pagesToAlloc = size/PGSIZE + (size%PGSIZE != 0);
 	int i;
+	int shmid;
 	for(i = 0; i < SHARED_MEM_REGIONS; i++){
 		//valid and already allocated to a process
 		if(allSharedMemRegions[i].valid == 1 && allSharedMemRegions[i].key == key){
-			if(allSharedMemRegons[i].size != pagesToAlloc){
+			if(allSharedMemRegions[i].size != pagesToAlloc){
 				cprintf("Error: size of shared mem regions don't match\n");
 				return -1; 
 			}
 			else{
-				return allSharedMemRegions[i].shmid;
+				return shmid = allSharedMemRegions[i].shmid;
 			}
 		}
 		//not allocated
 		else{
 			notused = i;
-			notAllocFlag - 1;
+			notAllocFlag = 1;
 			break;
 		}
 	}
@@ -457,12 +458,12 @@ int shmget_util(int key, int size, int shmflag)
 		//allocate pages from free shared memory region
 		for(int i = 0; i < pagesToAlloc; i++){
 			void* new_page = kalloc();
-			if(new_page == NULL){
+			if(new_page == 0){
 				cprintf("error in allocating a page\n");
 				return -1;
 			}
-			memset(new_page, 0, PGSZIZE);
-			allSharedMemRegions[notused].physicalAddress = V2P(new_page); //check
+			memset(new_page, 0, PGSIZE);
+			allSharedMemRegions[notused].physicalAddress = (void*)V2P(new_page); //check
 		}
 		allSharedMemRegions[notused].key = key;
 		allSharedMemRegions[notused].size = pagesToAlloc;
