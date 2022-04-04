@@ -111,7 +111,14 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-
+  
+  //Initialize sharedPages array for a process
+  for(int i = 0; i < SHARED_MEM_REGIONS; i++){
+  	p->sharedPages[i].key = -1;
+	p->sharedPages[i].shmid = -1;
+	p->sharedPages[i].valid = 0;
+	p->sharedPages[i].virtualAddress = (void*)0;
+  }
   return p;
 }
 

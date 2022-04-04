@@ -40,7 +40,7 @@ struct sharedMemPages{
 	int key;
 	int shmid;
 	int valid; //0 = invalid, 1 = valid;
-	void *virtualAddress;
+	void *virtualAddress; //check: to keep an array or single address
 };
 
 
@@ -61,7 +61,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  struct sharedMemPages sharedPages[SHARED_MEM_REGIONS]; //array of shared pages by the process
+  struct sharedMemPages sharedPages[SHARED_MEM_REGIONS]; //array of pages shared by the process
 };
 
 // Process memory is laid out contiguously, low addresses first:
