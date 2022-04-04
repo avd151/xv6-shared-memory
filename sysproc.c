@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "shm.h"
 
 int
 sys_fork(void)
@@ -90,3 +91,23 @@ sys_uptime(void)
   return xticks;
 }
 
+//Shared Memory System calls
+
+//Shmget
+int
+sys_shmget(void){
+	cprintf("In shmget\n");
+	int key;
+	int size;
+	int shmflag;
+	int ret;
+	int shmid;
+	ret = argint(0, &key);
+	if(ret < 0)return -1;
+	ret = argint(1, &size);
+	if(ret < 0) return -1;
+	ret = argint(2, &shmflag);
+	if(ret < 0)return -1;
+	shmid = shmget_util(key, size, shmflag);
+	return shmid;
+}

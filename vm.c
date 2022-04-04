@@ -6,6 +6,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "elf.h"
+#include "shm.h"
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
@@ -118,7 +119,7 @@ static struct kmap {
 struct sharedMemRegion{
 	int key;
 	int size;
-	int id;
+	int shmid;
 	int valid; //0 = invalid, 1 = valid
 	void* physicalAddress; //check - single address or array of addresses
 };
@@ -410,19 +411,20 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 
 void shared_memory_init(void){
 	//Iniitialize shared memory region 
-	//Shared memory pages - initialised in proc.c
+	//todo: Shared memory pages - initialised in proc.
 	int i = 0;
 	for(i = 0; i < SHARED_MEM_REGIONS; i++){
 		allSharedMemRegions[i].key = -1;
 		allSharedMemRegions[i].valid = 0;
-		allSharedMemRegions[i].id = -1;
+		allSharedMemRegions[i].shmid = -1;
 		//check: Initialize physical address to 0
-		allSharedMemRegions[i].physicalAddr = 0;
+		allSharedMemRegions[i].physicalAddress = 0;
+	}
 }
 
 //shmget
-int sys_shmget(int key, int size, int shmflag)
+int shmget_util(int key, int size, int shmflag)
 {
-	cprintf("In shmget\n");
+	cprintf("In shmget util\n");
 	return 0;
 }

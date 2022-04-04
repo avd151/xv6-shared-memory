@@ -37,10 +37,10 @@ struct context {
 //Share pages between processes
 #define SHARED_MEM_REGIONS 64
 struct sharedMemPages{
-        int key;
-	int id;
+	int key;
+	int shmid;
 	int valid; //0 = invalid, 1 = valid;
-        void *virtualAddr;
+	void *virtualAddress;
 };
 
 
@@ -61,7 +61,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  struct sharedMemPages allSharedPages[SHARED_MEM_REGIONS]; //array of shared pages by the process
+  struct sharedMemPages sharedPages[SHARED_MEM_REGIONS]; //array of shared pages by the process
 };
 
 // Process memory is laid out contiguously, low addresses first:
