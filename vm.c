@@ -475,3 +475,29 @@ int shmget_util(int key, int size, int shmflag)
 	}
 	return shmid;
 }
+
+int getFirstAvailableIndex(){
+        //find starting address of segment or return -1
+        int index=-1;
+        return index;
+}
+
+void* shmat(int shmid, void* shmaddr, int shmflag){
+        if(shmid<0 || shmid>64){
+                return (void*)-1;
+        }
+        if(!shmaddr){ //if shmaddr NULL, segmentr gets attached to first available address
+                for(int i=0; i<SHARED_MEM_REGIONS; i++){
+                        index = getFirstAvailableIndex();
+                        if(index != -1){
+                                //attach segment to the index
+                        }
+                        else{
+                                break;
+                        }
+                }
+        }
+        else{
+                //attach segment att the address (shmaddr-((prtdiff_t)shmaddr%SHMLBA))
+        }
+}
