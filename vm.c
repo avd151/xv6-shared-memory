@@ -121,7 +121,7 @@ struct sharedMemRegion{
 	int size;
 	int shmid;
 	int valid; //0 = invalid, 1 = valid
-	void* physicalAddress; //check - single address or array of addresses
+	void* physicalAddress[SHARED_MEM_REGIONS]; //array of physical addresses of shared pages of a region
 };
 struct sharedMemRegion allSharedMemRegions [SHARED_MEM_REGIONS];
 
@@ -417,8 +417,10 @@ void shared_memory_init(void){
 		allSharedMemRegions[i].key = -1;
 		allSharedMemRegions[i].valid = 0;
 		allSharedMemRegions[i].shmid = -1;
-		//check: Initialize physical address to 0
-		allSharedMemRegions[i].physicalAddress = 0;
+		for(int j = 0; j < SHARED_MEM_REGIONS; j++){
+			//check: Initialize physical address to 0
+			allSharedMemRegions[i].physicalAddress[j] = (void*)0;
+		}
 	}
 }
 
@@ -463,7 +465,7 @@ int shmget_util(int key, int size, int shmflag)
 				return -1;
 			}
 			memset(new_page, 0, PGSIZE);
-			allSharedMemRegions[notused].physicalAddress = (void*)V2P(new_page); //check
+			allSharedMemRegions[notused].physicalAddress[i] = (void*)V2P(new_page); //check
 		}
 		allSharedMemRegions[notused].key = key;
 		allSharedMemRegions[notused].size = pagesToAlloc;
