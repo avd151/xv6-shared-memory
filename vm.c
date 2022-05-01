@@ -591,39 +591,60 @@ void* shmatUtil(int shmid, void* shmaddr, int shmflag){
 //shmdt
 //Detach shared memory segment from current process
 void* shmdtUtil(void* shmaddr){
-	//int totalSize=0,i;
+	int totalSize=0;
 	int i;
+	//int found = -1;
 	struct proc *currProcess = myproc();
 	void* virtualAddress = 0;
 	//finding the virtual address where memory is shared
 	for(i=0; i<SHARED_MEM_REGIONS; i++){
 		if(currProcess->sharedPages[i].key != -1 && currProcess->sharedPages[i].virtualAddress == shmaddr){
 			virtualAddress = currProcess->sharedPages[i].virtualAddress;
-			//totalSize = currProcess->sharedPages[i].size;
+			totalSize = currProcess->sharedPages[i].size;
+			//found = i;
 			break;
 		}
 	}
 	// iF found, free the memory and return else return -1
 	if(virtualAddress != 0){
+	//Remove page table entry from pageTage
+		for(int j = 0; j < totalSize; j++){
+			pte_t* pageTableEntry = walkpgdir(currProcess->pgdir, (void*)((int)virtualAddress + j*PGSIZE), 0);
+			//PTE doesnt exists
+			if(!pageTableEntry){
+				return (void*)-1;
+			}
+			*pageTableEntry = 0;
+		}
 		//reinitializing values of shared pages
 		currProcess->sharedPages[i].size=0;
-		currProcess->sharedPages[i].virtualAddress=0;
+		currProcess->sharedPages[i].virtualAddress= (void*)0;
 		currProcess->sharedPages[i].key=-1;
 		currProcess->sharedPages[i].shmid=-1;
-		
-		//freeing up the shared address space
-		for(int j=0; j<allSharedMemRegions[i].size; j++){
-			char *addressOfRegion = (char*)P2V(allSharedMemRegions[i].physicalAddress[i]);
-			kfree(addressOfRegion);
-			allSharedMemRegions[i].physicalAddress[i] = (void *)0;
+
+		if(allSharedMemRegions[i].buffer.nAttached == 0 && allSharedMemRegions[i].toDelete == 1){
+			//freeing up the shared address space
+			for(int j=0; j<allSharedMemRegions[i].size; j++){
+				char *addressOfRegion = (char*)P2V(allSharedMemRegions[i].physicalAddress[i]);
+				kfree(addressOfRegion);
+				allSharedMemRegions[i].physicalAddress[i] = (void *)0;
+			}
+			
+			// reinitializing shared memory regions
+			allSharedMemRegions[i].size = 0;
+			allSharedMemRegions[i].shmid = -1;
+			allSharedMemRegions[i].key = -1;
+			allSharedMemRegions[i].valid = 0;
+			allSharedMemRegions[i].toDelete = 0;
+			allSharedMemRegions[i].buffer.sharedMemPerm.key = -1;
+			allSharedMemRegions[i].buffer.sharedMemPerm.mode = 0;
+			allSharedMemRegions[i].buffer.nAttached = 0;
+			allSharedMemRegions[i].buffer.sharedMemSize = 0;
+			allSharedMemRegions[i].buffer.creatorPid = -1;
+			allSharedMemRegions[i].buffer.lastModifiedPid = currProcess->pid;		
 		}
-		
-		// reinitializing shared memory regions
-		allSharedMemRegions[i].size = 0;
-		allSharedMemRegions[i].shmid = -1;
-		allSharedMemRegions[i].key = -1;
-		allSharedMemRegions[i].valid = 0;
 		return (void*)0;
+		
 	}
 	return (void*)-1;
 }
