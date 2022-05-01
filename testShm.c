@@ -30,7 +30,9 @@ void shmgetTests(){
 	}
 
 	//getting existing shmid
+	
 	printf(1, "Already created memory's shmid: ");
+
 	int test1 = shmget(3846, 2350, 0);
 	if(test1 == test){
 		printf(1, "Passed\n");
@@ -141,6 +143,7 @@ void shmatTests(){
 		printf(1, "Not allowed ! : Failed\n");
 	}
 	printf(1, "Detaching readonly region : ");
+
    	int testdt = shmdt(test);
     	if(testdt < 0) {
 		printf(1, "Failed\n");
@@ -156,8 +159,10 @@ void shmdtTests(){
 	printf(1,"Test for shmdt\n\n");
 	//basic detach 
 	printf(1,"Basic detach test: ");
+
 	//int test1 = shmget(2473, 2647, 06 | IPC_CREAT);
 	char* testaddr1 = (char *)shmat(20, (void *)0, 0);
+
 	printf(1, "Basic detach test : ");
 	int testdt = shmdt(testaddr1);
     	if(testdt < 0) {
