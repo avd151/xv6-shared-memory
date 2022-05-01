@@ -94,20 +94,48 @@ sys_uptime(void)
 //Shared Memory System calls
 
 //Shmget
+//int shmget(int key, int size, int shmflag)
 int
 sys_shmget(void){
 	cprintf("In shmget\n");
 	int key;
 	int size;
-	int shmflag;
+	int shmFlag;
 	int ret;
 	int shmid;
 	ret = argint(0, &key);
 	if(ret < 0)return -1;
 	ret = argint(1, &size);
 	if(ret < 0) return -1;
-	ret = argint(2, &shmflag);
+	ret = argint(2, &shmFlag);
 	if(ret < 0)return -1;
-	shmid = shmget_util(key, size, shmflag);
+	shmid = shmgetUtil(key, size, shmFlag);
 	return shmid;
 }
+
+//Shmat
+//void* shmat(int shmid, void* shmAddr, int shmflag)
+void*
+sys_shmat(void){
+	cprintf("In shmat\n");
+	int shmid;
+	int shmAddr;
+	int shmFlag;
+	int ret;
+	void* shmStartAddr;
+	ret = argint(0, &shmid);
+	if(ret < 0)return (void*)-1;
+        ret = argint(1, &shmAddr);
+        if(ret < 0)return (void*)-1;
+        ret = argint(2, &shmFlag);
+        if(ret < 0)return (void*)-1;
+	shmStartAddr = shmatUtil(shmid, (void*)shmAddr, shmFlag);
+	return shmStartAddr;
+}
+
+//Shmdt
+
+
+
+//Shmctl
+

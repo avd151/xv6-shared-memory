@@ -401,7 +401,7 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 
 //Shared Memory Functions 
 
-void shared_memory_init(void){
+void sharedMemoryInit(void){
 	//Iniitialize shared memory region 
 	//todo: Shared memory pages - initialised in proc.
 	int i = 0;
@@ -417,7 +417,7 @@ void shared_memory_init(void){
 }
 
 //shmget
-int shmget_util(int key, int size, int shmflag)
+int shmgetUtil(int key, int size, int shmflag)
 {
 	//cprintf("In shmget util\n");
 	int notused = -1, notAllocFlag = 0;
@@ -474,7 +474,7 @@ int getFirstAvailableIndex(){
         return index;
 }
 
-void* shmat(int shmid, void* shmaddr, int shmflag){
+void* shmatUtil(int shmid, void* shmaddr, int shmflag){
        	void* sharedMemAddr;
 	int index = -1;
        	if(shmid<0 || shmid>64){

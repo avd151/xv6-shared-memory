@@ -5,10 +5,21 @@
 int
 main(int argc, char *argv[])
 {
+	//Shmget
 	int shmid = shmget(1, 2,3);
-	if(shmid >= 0)
+	if(shmid >= 0){
 		printf(1, "shmid = %d\n", shmid);
-	else
+	}else{
 		printf(1, "Error in shmget\n");
- 	exit();
+	}
+
+	//Shmat
+	void* testAddr = (void*)0;
+	void* shmAddr = shmat(1,testAddr,2);
+       	if(shmAddr != (void*)-1){
+		printf(1, "In shmat \n");
+	}else{
+		printf(1, "error in shmat\n");	
+	}
+	exit();
 }

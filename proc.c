@@ -117,7 +117,8 @@ found:
   	p->sharedPages[i].key = -1;
 	p->sharedPages[i].shmid = -1;
 	p->sharedPages[i].valid = 0;
-	p->sharedPages[i].virtualAddress = (void*)0;
+	for(int j = 0; j < SHARED_MEM_REGIONS; j++)
+		p->sharedPages[i].virtualAddress[j] = (void*)0;
   }
   return p;
 }

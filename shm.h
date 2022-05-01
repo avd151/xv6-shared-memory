@@ -13,8 +13,8 @@ struct sharedMemRegion{
 };
 
  
-void shared_memory_init(void);
-int shmget_util(int, int, int); //key, size, shmflag
-void* shmat(int, void*, int); //shmid, shmaddr, shmflag
+void sharedMemoryInit(void);
+int shmgetUtil(int, int, int); //key, size, shmflag
+void* shmatUtil(int, void*, int); //shmid, shmaddr, shmflag
 //int shmdet(void*); //shmaddr
 //int shmctl(int, int, struct shmid_ds*); //shmid, cmd, struct shmid_ds* buf
