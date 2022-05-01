@@ -3,8 +3,10 @@
 #include "user.h"
 #include "memlayout.h"
 #include "shm.h"
-void shmatTests();
 void shmgetTests();
+void shmatTests();
+void shmdtTests();
+void shmctlTests();
 
 int
 main(int argc, char *argv[])
@@ -29,6 +31,8 @@ main(int argc, char *argv[])
 	*/
 	shmgetTests();
 	shmatTests();
+	shmdtTests();
+	shmctlTests();
 	exit();
 }
 
@@ -144,6 +148,33 @@ void shmatTests(){
 	}
 	else{
 		printf(1, "Failed\n");
+	}
+	return;
+}
+
+//shmdt tests
+void shmdtTests(){
+	printf(1,"Test for shmdt\n\n");
+	//basic detach 
+	printf(1,"Basic detach test: ");
+	int test1 = shmget(2473, 2647, 06 | IPC_CREAT);
+	char* testaddr1 = (char *)shmat(shmid, (void *)0, 0);
+	printf(1, "Basic detach test : ");
+	int testdt = shmdt(testaddr1);
+    	if(testdt < 0) {
+		printf(1, "Failed\n");
+	}
+	else {
+		printf(1,"Passed\n");
+	}
+
+	//detaching invalid virtual address
+	int testdt2 = shmdt((void*)7538);
+	if(testdt2 < 0) {
+		printf(1, "Passed\n");
+	}
+	else {
+		printf(1,"Failed\n");
 	}
 	return;
 }
