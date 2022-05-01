@@ -21,6 +21,8 @@
 #define SHM_INFO 6
 #define SHM_LOCK 7
 #define SHM_UNLOCK 8
+
+//shmflags
 #define READ_SHM 04
 #define RW_SHM 06
 

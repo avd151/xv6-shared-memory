@@ -39,6 +39,7 @@ struct context {
 struct sharedMemPages{
 	int key;
 	int shmid;
+	int size;
 	int valid; //0 = invalid, 1 = valid;
 	void *virtualAddress; //check: to keep an array or single address
 };

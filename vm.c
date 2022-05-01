@@ -421,10 +421,32 @@ int shmgetUtil(int key, int size, int shmflag)
 {
 	//cprintf("In shmget util\n");
 	int notused = -1, notAllocFlag = 0;
-	//no. of pages to allocate
-	int pagesToAlloc = size/PGSIZE + (size%PGSIZE != 0);
 	int i;
 	int shmid;
+	struct proc *currProc = myproc();
+	//no. of pages to allocate
+	int pagesToAlloc = size/PGSIZE + (size%PGSIZE != 0);
+	if(pagesToAlloc < 0 || pagesToAlloc > SHARED_MEM_REGIONS){
+		return -1;
+	}
+	//Find permissions from shmflag
+	//xv6 = single user => lower 7 bits considered
+	int lowerBits = shmflag & 7;
+	int currPermission = -1;
+	if(lowerBits == (int)RW_SHM){
+		currPermission = RW_SHM;
+		shmflag ^= RW_SHM;
+	}
+	else if(lowerBits == (int)READ_SHM){
+		currPermission = READ_SHM;
+		shmflag ^= READ_SHM;
+	}
+	else if((shmflag == 0) && (key == IPC_PRIVATE)){
+			return -1;
+	}
+	if(size < 0 || size > KERNBASE){
+		return -1;
+	}
 	//Find if there is already valid shared memory region associated with given key
 	for(i = 0; i < SHARED_MEM_REGIONS; i++){
 		//valid and already allocated
@@ -434,14 +456,30 @@ int shmgetUtil(int key, int size, int shmflag)
 				//cprintf("Error: size of shared mem regions don't match\n");
 				return -1; 
 			}
-			else{
-				shmid = allSharedMemRegions[i].shmid;
-				return shmid;
+			//check permissions 
+			int regionPerm = allSharedMemRegions[i].buffer.sharedMemPerm.mode;
+			if(regionPerm == READ_SHM || regionPerm == RW_SHM){
+				if(shmflag == 0 && key != IPC_PRIVATE){
+					shmid = allSharedMemRegions[i].shmid;
+					return shmid;
+				}
+				else if(shmflag == IPC_CREAT){
+					shmid = allSharedMemRegions[i].shmid;
+					return shmid;
+				}
+				else{
+					return -1;
+				}
+			}
+			//IPC_CREAT | IPC_EXCL for already existing memory
+			if(shmflag == (IPC_CREAT | IPC_EXCL)){
+				return -1;
 			}
 		}
-		//check if can check for free region in same loop - as it may lead to duplicates
-		//not allocated - Found first index of unused shared memory region
-		else{
+	}
+	//Find unallocated shared memory region
+	for(i = 0; i < SHARED_MEM_REGIONS; i++){
+		if(allSharedMemRegions[i].key == -1){
 			notused = i;
 			notAllocFlag = 1;
 			break;
@@ -454,6 +492,8 @@ int shmgetUtil(int key, int size, int shmflag)
 	}
 	//Free shared memory exists
 	if(notAllocFlag){
+		
+		if((key == IPC_PRIVATE) || (key == IPC_CREAT) || (key == (IPC_CREAT | IPC_EXCL))){
 		//Allocate pages from free shared memory region
 		for(int i = 0; i < pagesToAlloc; i++){
 			void* newPage = kalloc();
@@ -463,15 +503,22 @@ int shmgetUtil(int key, int size, int shmflag)
 				return -1;
 			}
 			memset(newPage, 0, PGSIZE);
-			allSharedMemRegions[notused].physicalAddress[i] = (void*)V2P(newPage); //check
+			allSharedMemRegions[notused].physicalAddress[i] = (void*)V2P(newPage);
 		}
 		allSharedMemRegions[notused].key = key;
 		allSharedMemRegions[notused].size = pagesToAlloc;
-		
-		//todo: Get shmid
+		allSharedMemRegions[notused].buffer.sharedMemPerm.key = key;
+		allSharedMemRegions[notused].buffer.sharedMemPerm.mode = currPermission;		
+		allSharedMemRegions[notused].shmid = notused;
+		allSharedMemRegions[notused].buffer.creatorPid = currProc->pid;
+		allSharedMemRegions[notused].buffer.lastModifiedPid = -1;
+		allSharedMemRegions[notused].buffer.sharedMemSize = pagesToAlloc;
+		allSharedMemRegions[notused].buffer.nAttached = 0;
 		shmid = notused;
+		return shmid;
 	}
-	return shmid;
+	}
+	return -1; //in case of any other combination of shmflag and key
 }
 
 //Returns index of process's sharedPages virtual address having virtual addr >= virtual address of current process
@@ -543,15 +590,16 @@ void* shmatUtil(int shmid, void* shmaddr, int shmflag){
 
 //shmdt
 //Detach shared memory segment from current process
-int shmdtUtil(void* shmaddr){
-	int totalSize=0,i;
+void* shmdtUtil(void* shmaddr){
+	//int totalSize=0,i;
+	int i;
 	struct proc *currProcess = myproc();
 	void* virtualAddress = 0;
 	//finding the virtual address where memory is shared
-	for(i=0; i<SHARED_MEM_REGION; i++){
+	for(i=0; i<SHARED_MEM_REGIONS; i++){
 		if(currProcess->sharedPages[i].key != -1 && currProcess->sharedPages[i].virtualAddress == shmaddr){
 			virtualAddress = currProcess->sharedPages[i].virtualAddress;
-			totalSize = currProcess->sharedPages[i].size;
+			//totalSize = currProcess->sharedPages[i].size;
 			break;
 		}
 	}
@@ -565,9 +613,9 @@ int shmdtUtil(void* shmaddr){
 		
 		//freeing up the shared address space
 		for(int j=0; j<allSharedMemRegions[i].size; j++){
-			char *addressofRegion = (char*)P2V(allSharedMemRegions[i].physicalAddress[i]);
-			kfree(addr);
-			allSharedMemRegions[i] = (void *)0;
+			char *addressOfRegion = (char*)P2V(allSharedMemRegions[i].physicalAddress[i]);
+			kfree(addressOfRegion);
+			allSharedMemRegions[i].physicalAddress[i] = (void *)0;
 		}
 		
 		// reinitializing shared memory regions
@@ -575,9 +623,9 @@ int shmdtUtil(void* shmaddr){
 		allSharedMemRegions[i].shmid = -1;
 		allSharedMemRegions[i].key = -1;
 		allSharedMemRegions[i].valid = 0;
-		return 0;
+		return (void*)0;
 	}
-	return -1;
+	return (void*)-1;
 }
 
 
