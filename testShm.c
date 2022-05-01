@@ -3,31 +3,68 @@
 #include "user.h"
 #include "memlayout.h"
 #include "shm.h"
+void shmgetTests();
 void shmatTests();
+void shmdtTests();
+void shmctlTests();
 
 int
-main(int argc, char *argv[])
-{
-	/*
-	//Shmget
-	int shmid = shmget(1, 2,3);
-	if(shmid >= 0){
-		printf(1, "shmid = %d\n", shmid);
-	}else{
-		printf(1, "Error in shmget\n");
+main(int argc, char *argv[]){
+	shmgetTests();
+	shmatTests();
+	shmdtTests();
+	shmctlTests();
+	exit();
+}
+
+//shmget tests
+void shmgetTests(){
+	printf(1,"Test for shmget\n\n");
+	//Basic shmget test
+	printf(1, "Basic memory creation: ");
+	int test = shmget(3846, 2350, 06 | IPC_CREAT);
+	if(test < 0) {
+		printf(1, "Failed\n");
+	} else {
+		printf(1, "Passed\n");
 	}
 
-	//Shmat
-	void* testAddr = (void*)0;
-	void* shmAddr = shmat(1,testAddr,2);
-       	if(shmAddr != (void*)-1){
-		printf(1, "In shmat \n");
-	}else{
-		printf(1, "error in shmat\n");	
+	//getting existing shmid
+	printf(1, "Already created memory's shmid: ");
+	int test1 = shmget(3846, 2350, 0);
+	if(test1 == test){
+		printf(1, "Passed\n");
+	} else {
+		printf(1, "Failed\n");
+	}	
+
+	//checking for zero size
+	printf(1,"Region with zero size: ");
+	int test2 = shmget(4001, 0, 06 | IPC_CREAT);
+	if(test2 < 0) {
+		printf(1, "Passed\n");
+	} else {
+		printf(1, "Failed\n");
 	}
-	*/
-	shmatTests();
-	exit();
+
+	//checking for no permissions
+	printf(1, "Invalid permission check : ");
+	int test3 = shmget(2005, 4000, IPC_CREAT);
+	if(test3 < 0) {
+		printf(1, "Passed\n");
+	} else {
+		printf(1, "Failed\n");
+	}
+
+	//checking for more than allowed pages
+	printf(1,"More than allowed pages: ");
+	int test4 = shmget(3825, 1.6e+7 + 17, 06 | IPC_CREAT);
+	if(test4 < 0) {
+		printf(1, "Passed\n");
+	} else {
+		printf(1, "Failed\n");
+	}
+	return;
 }
 
 //shmat tests
@@ -93,5 +130,82 @@ void shmatTests(){
 	else{
 		printf(1, "Failed\n");
 	}
+
+	//Read only access test
+	printf(1, "Read only access test: ");
+	test = (char*)shmat(atId2, (void *)(0), SHM_RDONLY);
+	if((int)test != -1) {
+		printf(1,"Allowed ! : Passed\n");
+	}
+	else {    
+		printf(1, "Not allowed ! : Failed\n");
+	}
+	printf(1, "Detaching readonly region : ");
+   	int testdt = shmdt(test);
+    	if(testdt < 0) {
+		printf(1, "Failed\n");
+	} 
+	else {
+       		printf(1,"Passed\n");
+    }
 	return;
+}
+
+//shmdt tests
+void shmdtTests(){
+	printf(1,"Test for shmdt\n\n");
+	//basic detach 
+	printf(1,"Basic detach test: ");
+	//int test1 = shmget(2473, 2647, 06 | IPC_CREAT);
+	char* testaddr1 = (char *)shmat(20, (void *)0, 0);
+	printf(1, "Basic detach test : ");
+	int testdt = shmdt(testaddr1);
+    	if(testdt < 0) {
+		printf(1, "Failed\n");
+	}
+	else {
+		printf(1,"Passed\n");
+	}
+
+	//detaching invalid virtual address
+	int testdt2 = shmdt((void*)7538);
+	if(testdt2 < 0) {
+		printf(1, "Passed\n");
+	}
+	else {
+		printf(1,"Failed\n");
+	}
+	return;
+}
+
+void shmctlTests(){
+
+	int shmid = 30;
+	// user shmid_ds data structure
+	struct shmidDs buff1;
+	printf(1, "Test for IPC_STAT : ");
+	int ctl = shmctl(shmid, IPC_STAT, &buff1);
+	if(ctl < 0) {
+		printf(1, "Test Failed\n");
+	} else {
+		printf(1, "Test Passed\n");
+	}
+	// readonly
+	buff1.sharedMemPerm.mode = 04;
+	printf(1, "Test for IPC_SET: ");
+	// set read-only permission to exisiting region
+	ctl = shmctl(shmid, IPC_SET, &buff1);
+	if(ctl < 0) {
+		printf(1, "Test Failed\n");
+	} else {
+		printf(1, "Test Passed\n");
+	}
+	printf(1, "Test for IPC_RMID: ");
+	int ctl3 = shmctl(12345, IPC_RMID, (void *)0);
+	if(ctl3 < 0) {
+		printf(1, "Test Passed\n");
+	} else {
+		printf(1, "Test Failed\n");
+	}	
+return;
 }
