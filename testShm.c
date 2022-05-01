@@ -4,6 +4,7 @@
 #include "memlayout.h"
 #include "shm.h"
 void shmatTests();
+void shmgetTests();
 
 int
 main(int argc, char *argv[])
@@ -26,8 +27,59 @@ main(int argc, char *argv[])
 		printf(1, "error in shmat\n");	
 	}
 	*/
+	shmgetTests();
 	shmatTests();
 	exit();
+}
+
+//shmget tests
+void shmgetTests(){
+	printf(1,"Test for shmget\n\n");
+	//Basic shmget test
+	printf(1, "Basic memory creation: ");
+	int test = shmget(3846, 2350, 06 | IPC_CREAT);
+	if(test < 0) {
+		printf(1, "Failed\n");
+	} else {
+		printf(1, "Passed\n");
+	}
+
+	//getting existing shmid
+	printf("Already created memory's shmid: ");
+	int test1 = shmget(3846, 2350, 0);
+	if(test1 == test){
+		printf(1, "Passed\n");
+	} else {
+		printf(1, "Failed\n");
+	}	
+
+	//checking for zero size
+	printf(1,"Region with zero size: ");
+	int test2 = shmget(4001, 0, 06 | IPC_CREAT);
+	if(test2 < 0) {
+		printf(1, "Passed\n");
+	} else {
+		printf(1, "Failed\n");
+	}
+
+	//checking for no permissions
+	printf(1, "Invalid permission check : ");
+	int test3 = shmget(2005, 4000, IPC_CREAT);
+	if(test3 < 0) {
+		printf(1, "Passed\n");
+	} else {
+		printf(1, "Failed\n");
+	}
+
+	//checking for more than allowed pages
+	printf(1,"More than allowed pages: ");
+	int test4 = shmget(3825, 1.6e+7 + 17, 06 | IPC_CREAT);
+	if(test4 < 0) {
+		printf(1, "Passed\n");
+	} else {
+		printf(1, "Failed\n");
+	}
+	return;
 }
 
 //shmat tests
