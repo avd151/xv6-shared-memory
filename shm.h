@@ -9,7 +9,7 @@ struct sharedMemRegion{
 	int size;
 	int shmid;
 	int valid; //0 = invalid, 1 = valid
-	void* physicalAddress[SHARED_MEM_REGIONS]; //array of physical addresses of shared pages of a region
+	void* physicalAddress[SHARED_MEM_REGIONS]; //check: single variable or array of physical addresses of shared memory regions
 };
 
  
