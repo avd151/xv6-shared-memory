@@ -97,7 +97,7 @@ sys_uptime(void)
 //int shmget(int key, int size, int shmflag)
 int
 sys_shmget(void){
-	cprintf("In shmget\n");
+	//cprintf("In shmget\n");
 	int key;
 	int size;
 	int shmFlag;
@@ -117,7 +117,7 @@ sys_shmget(void){
 //void* shmat(int shmid, void* shmAddr, int shmflag)
 void*
 sys_shmat(void){
-	cprintf("In shmat\n");
+	//cprintf("In shmat\n");
 	int shmid;
 	int shmAddr;
 	int shmFlag;
@@ -136,7 +136,7 @@ sys_shmat(void){
 //Shmdt
 void*
 sys_shmdt(void){
-	cprintf("In shmdt\n");
+	//cprintf("In shmdt\n");
 	int shmAddr;
 	int ret;
 	void* retAddr;
@@ -150,7 +150,7 @@ sys_shmdt(void){
 //Shmctl
 int
 sys_shmctl(void){
-	cprintf("In shmctl\n");
+	//cprintf("In shmctl\n");
 	int shmid;
 	int command;
 	int buffer;

@@ -69,4 +69,4 @@ void sharedMemoryInit(void);
 int shmgetUtil(int, int, int); //key, size, shmflag
 void* shmatUtil(int, void*, int); //shmid, shmaddr, shmflag
 void* shmdtUtil(void*); //shmaddr
-int shmctlUtil(int, int, void*); //shmid, cmd, struct shmidDS buf check: declare shmidDS buffer or not
+int shmctlUtil(int, int, void*); //shmid, cmd, struct shmidDS buf 

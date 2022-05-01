@@ -529,7 +529,7 @@ int getFirstAvailableIndex(struct proc *currProc, void* currVirtualAddr){
 	void* minVirtualAddr = (void*)(KERNBASE - 1);
 	for(int i = 0; i < SHARED_MEM_REGIONS; i++){
 		currProcVirtualAddress = (int)currProc->sharedPages[i].virtualAddress;
-		if((currProcVirtualAddress >= (int)currVirtualAddr) && (currProc->sharedPages[i].key != -1) && (currProc->sharedPages[i].valid) && (currProcVirtualAddress <= (int)minVirtualAddr)){
+		if((currProcVirtualAddress >= (int)currVirtualAddr) && (currProc->sharedPages[i].key != -1) && (currProcVirtualAddress <= (int)minVirtualAddr)){
 		minVirtualAddr = (void*)currProcVirtualAddress;//check if it works  
 		index = i;
 		break;
@@ -541,12 +541,18 @@ int getFirstAvailableIndex(struct proc *currProc, void* currVirtualAddr){
 void* shmatUtil(int shmid, void* shmaddr, int shmflag){
 	void* minVirtualAddress = (void*)0;;
 	void* virtualAddress = (void*)HEAPLIMIT;
+	int roundedAddr;
 	int index = -1;
+	int currPerms;
 	struct proc *currProc = myproc();
 	index = allSharedMemRegions[shmid].shmid;
 	//If shared memory region corresponding to shmid doesnt exist
 	if(index == -1){
 		return (void*)-1;	
+	}
+	//if invalid shmid
+	if(shmid > SHARED_MEM_REGIONS || shmid < 0){
+		return (void*)-1;
 	}
 	//todo: Rounding off shmaddr
 	//If shmAddr is not given => shmaddr = NULL
@@ -557,8 +563,12 @@ void* shmatUtil(int shmid, void* shmaddr, int shmflag){
 			if(index != -1){
 				minVirtualAddress = currProc->sharedPages[index].virtualAddress;
 				//found virtual address of shared mem region and it is valid also
-				if(((int)virtualAddress + allSharedMemRegions[index].size*PGSIZE) <=  (int)minVirtualAddress)        
+				if(((int)virtualAddress + allSharedMemRegions[index].size*PGSIZE) <=  (int)minVirtualAddress){        
           			break;
+          		}
+          		else{
+          			virtualAddress = (void*)((int)minVirtualAddress + currProc->sharedPages[index].size*PGSIZE);
+          		}
 			}
 			//Index = -1 => didnt find min shared Mem region to attach
 			else{
@@ -572,22 +582,80 @@ void* shmatUtil(int shmid, void* shmaddr, int shmflag){
 		if((int)shmaddr >= KERNBASE || (int)shmaddr < HEAPLIMIT) {
 		      return (void*)-1;
 		}
+		roundedAddr = ((int)shmaddr & ~(SHMLBA - 1));
+		
 		//shmflag & SHM_RND != 0
 		if(shmflag & SHM_RND){
-			virtualAddress = (void*)(shmaddr-((int)shmaddr%SHMLBA));
+			if(roundedAddr == 0){
+			return (void*)-1;
+			}
+			virtualAddress = (void*)(roundedAddr);
 		}
 		//shmflag & SHM_RND == 0
 		else{
-			virtualAddress = shmaddr;
+		//shmaddr is page aligned
+			if(roundedAddr == (int)shmaddr){
+				virtualAddress = shmaddr;
+			}
 		}
 	}
 	//if base address + memory given exceeds the kernbase
 	if(((int)virtualAddress + allSharedMemRegions[index].size * PGSIZE) >= KERNBASE){
 		return (void*)-1;
 	}
-	return virtualAddress;
+	//Find virtual addr of page having adress <= current virtual address
+	int found = -1;
+	for(int i = 0; i < SHARED_MEM_REGIONS; i++){
+		if((currProc->sharedPages[i].key != -1) && ((int)virtualAddress < (int)currProc->sharedPages[i].size*PGSIZE) && ((int)virtualAddress >= (int)currProc->sharedPages[i].virtualAddress)){
+		found = i;
+		break;
+		}
+	}
+	if(found == -1){
+		return (void*)-1;
+	}
+	if((shmflag & SHM_RDONLY)||(allSharedMemRegions[found].buffer.sharedMemPerm.mode == READ_SHM)){
+		currPerms = PTE_U;
+	}
+	else if(allSharedMemRegions[found].buffer.sharedMemPerm.mode == RW_SHM){
+		currPerms = PTE_U | PTE_W;
+	}
+	else if(shmflag == SHM_REMAP){
+		return (void*)0;
+	}
+	else{
+	return (void*)-1;
+	}
+	//Mappages in virtual address space
+	for(int i = 0; i < allSharedMemRegions[found].size; i++){
+		int ret = mappages(currProc->pgdir, (void*)((int)virtualAddress + (i*PGSIZE)), PGSIZE, (int)allSharedMemRegions[found].physicalAddress[i], currPerms);
+		//couldnt do mappings
+		if(ret < 0) {
+      deallocuvm(currProc->pgdir,(int)virtualAddress,(int)(virtualAddress + allSharedMemRegions[found].size));
+      return (void*)-1;
+	}
+	int found2 = -1;
+	//find free pages
+	for(int i = 0; i < SHARED_MEM_REGIONS; i++){
+		if(currProc->sharedPages[i].key == -1){
+			found2 = i;
+			break;
+		}
+	}
+	if(found2 == -1){
+		return (void*)-1;
+	}
+	else{
+		currProc->sharedPages[found2].key = allSharedMemRegions[found].key;
+		currProc->sharedPages[found2].size = allSharedMemRegions[found].size;
+		currProc->sharedPages[found2].permission = currPerms;
+		currProc->sharedPages[found2].virtualAddress = virtualAddress;
+ 		allSharedMemRegions[found].buffer.nAttached++;
+ 		allSharedMemRegions[found].buffer.lastModifiedPid = currProc->pid; 		
+	}
 }
-
+return virtualAddress;
+}
 //shmdt
 //Detach shared memory segment from current process
 void* shmdtUtil(void* shmaddr){
@@ -691,8 +759,8 @@ int shmctlUtil(int shmid, int cmd, void* buff){
 		}
 		break;
 	
-	case SHM_STAT_ANY:
-		break;
+/*	case SHM_STAT_ANY:*/
+/*		break;*/
 	case IPC_SET:
 		//write values of members of shmidDs pointed to by buf to kernel DS associated with this sharedMem
 		if(!buffer){
@@ -738,14 +806,14 @@ int shmctlUtil(int shmid, int cmd, void* buff){
 		}
 		return 0;
 		break;
-	case IPC_INFO:
-		break;
-	case SHM_INFO:
-		break;
-	case SHM_LOCK:
-		break;
-	case SHM_UNLOCK:
-		break;
+/*	case IPC_INFO:*/
+/*		break;*/
+/*	case SHM_INFO:*/
+/*		break;*/
+/*	case SHM_LOCK:*/
+/*		break;*/
+/*	case SHM_UNLOCK:*/
+/*		break;*/
 	default:
 		//retVal = -1;
 		return -1;
