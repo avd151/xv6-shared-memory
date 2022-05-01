@@ -540,3 +540,41 @@ void* shmatUtil(int shmid, void* shmaddr, int shmflag){
 	}
 	return virtualAddress;
 }
+
+//
+int shmdtUtil(void* shmaddr){
+	int totalSize=0,i;
+	struct proc *currProcess = myproc();
+	void* virtualAddress = 0;
+	//finding the virtual address where memory is shared
+	for(i=0; i<SHARED_MEM_REGION; i++){
+		if(currProcess->sharedPages[i].key != -1 && currProcess->sharedPages[i].virtualAddress == shmaddr){
+			virtualAddress = currProcess->sharedPages[i].virtualAddress;
+			totalSize = currProcess->sharedPages[i].size;
+			break;
+		}
+	}
+	// iF found, free the memory and return else return -1
+	if(virtualAddress != 0){
+		//reinitializing values of shared pages
+		currProcess->sharedPages[i].size=0;
+		currProcess->sharedPages[i].virtualAddress=0;
+		currProcess->sharedPages[i].key=-1;
+		currProcess->sharedPages[i].shmid=-1;
+		
+		//freeing up the shared address space
+		for(int j=0; j<allSharedMemRegions[i].size; j++){
+			char *addressofRegion = (char*)P2V(allSharedMemRegions[i].physicalAddress[i]);
+			kfree(addr);
+			allSharedMemRegions[i] = (void *)0;
+		}
+		
+		// reinitializing shared memory regions
+		allSharedMemRegions[i].size = 0;
+		allSharedMemRegions[i].shmid = -1;
+		allSharedMemRegions[i].key = -1;
+		allSharedMemRegions[i].valid = 0;
+		return 0;
+	}
+	return -1;
+}
