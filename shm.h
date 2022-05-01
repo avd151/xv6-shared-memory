@@ -1,7 +1,14 @@
-#define IPC_CREAT 1
-#define IPC_EXCL 2
-#define IPC_PRIVATE 3
+#define IPC_CREAT 010000
+#define IPC_EXCL 020000
+#define IPC_PRIVATE 030000
 #define SHARED_MEM_REGIONS 64
+
+#define	SHM_RDONLY	040000	
+#define	SHM_RND		050000
+#define	SHM_REMAP	060000
+#define	SHM_EXEC	070000
+
+#define	SHMLBA	(1 * PGSIZE) //multiple of page size
 
 //Shared Memory Region
 struct sharedMemRegion{

@@ -40,7 +40,7 @@ struct sharedMemPages{
 	int key;
 	int shmid;
 	int valid; //0 = invalid, 1 = valid;
-	void *virtualAddress[SHARED_MEM_REGIONS]; //check: to keep an array or single address
+	void *virtualAddress; //check: to keep an array or single address
 };
 
 

@@ -425,74 +425,118 @@ int shmgetUtil(int key, int size, int shmflag)
 	int pagesToAlloc = size/PGSIZE + (size%PGSIZE != 0);
 	int i;
 	int shmid;
+	//Find if there is already valid shared memory region associated with given key
 	for(i = 0; i < SHARED_MEM_REGIONS; i++){
-		//valid and already allocated to a process
-		if(allSharedMemRegions[i].valid == 1 && allSharedMemRegions[i].key == key){
+		//valid and already allocated
+		if(allSharedMemRegions[i].key == key && allSharedMemRegions[i].valid){
+		//If shared memory region exists but size != current asked size
 			if(allSharedMemRegions[i].size != pagesToAlloc){
-				cprintf("Error: size of shared mem regions don't match\n");
+				//cprintf("Error: size of shared mem regions don't match\n");
 				return -1; 
 			}
 			else{
-				return shmid = allSharedMemRegions[i].shmid;
+				shmid = allSharedMemRegions[i].shmid;
+				return shmid;
 			}
 		}
-		//not allocated
+		//check if can check for free region in same loop - as it may lead to duplicates
+		//not allocated - Found first index of unused shared memory region
 		else{
 			notused = i;
 			notAllocFlag = 1;
 			break;
 		}
 	}
-	//no free shared memory region
-	if(notused == -1){
-		cprintf("Error: no free memory region\n");
+	//no free shared memory region exists
+	if(notused == -1 && !notAllocFlag){
+		//cprintf("Error: no free memory region\n");
 		return -1;
 	}
-	if(notAllocFlag == 1){
-		//allocate pages from free shared memory region
+	//Free shared memory exists
+	if(notAllocFlag){
+		//Allocate pages from free shared memory region
 		for(int i = 0; i < pagesToAlloc; i++){
-			void* new_page = kalloc();
-			if(new_page == 0){
-				cprintf("error in allocating a page\n");
+			void* newPage = kalloc();
+			//Error in allocating page
+			if(newPage == 0){
+				//cprintf("error in allocating a page\n");
 				return -1;
 			}
-			memset(new_page, 0, PGSIZE);
-			allSharedMemRegions[notused].physicalAddress[i] = (void*)V2P(new_page); //check
+			memset(newPage, 0, PGSIZE);
+			allSharedMemRegions[notused].physicalAddress[i] = (void*)V2P(newPage); //check
 		}
 		allSharedMemRegions[notused].key = key;
 		allSharedMemRegions[notused].size = pagesToAlloc;
-		allSharedMemRegions[notused].key = key;
+		
 		//todo: Get shmid
 		shmid = notused;
 	}
 	return shmid;
 }
 
-int getFirstAvailableIndex(){
+//Returns index of process's sharedPages virtual address having virtual addr >= virtual address of current process
+int getFirstAvailableIndex(struct proc *currProc, void* currVirtualAddr){
         //find starting address of segment or return -1
         int index=-1;
+	int currProcVirtualAddress; 
+	void* minVirtualAddr = (void*)(KERNBASE - 1);
+	for(int i = 0; i < SHARED_MEM_REGIONS; i++){
+		currProcVirtualAddress = (int)currProc->sharedPages[i].virtualAddress;
+		if((currProcVirtualAddress >= (int)currVirtualAddr) && (currProc->sharedPages[i].key != -1) && (currProc->sharedPages[i].valid) && (currProcVirtualAddress <= (int)minVirtualAddr)){
+		minVirtualAddr = (void*)currProcVirtualAddress;//check if it works  
+		index = i;
+		break;
+		}
+	}
         return index;
 }
 
 void* shmatUtil(int shmid, void* shmaddr, int shmflag){
-       	void* sharedMemAddr;
+	void* minVirtualAddress = (void*)0;;
+	void* virtualAddress = (void*)HEAPLIMIT;
 	int index = -1;
-       	if(shmid<0 || shmid>64){
-                return (void*)-1;
-        }
-        if(!shmaddr){ //if shmaddr NULL, segmentr gets attached to first available address
-                for(int i=0; i<SHARED_MEM_REGIONS; i++){
-                        index = getFirstAvailableIndex();
-                        if(index != -1){
-                                //attach segment to the index
-                        }
-                        else{
-                                break;
-                        }
-                }
-        }
-        else{
-                //attach segment att the address (shmaddr-((prtdiff_t)shmaddr%SHMLBA))
-        }
-	return sharedMemAddr;
+	struct proc *currProc = myproc();
+	index = allSharedMemRegions[shmid].shmid;
+	//If shared memory region corresponding to shmid doesnt exist
+	if(index == -1){
+		return (void*)-1;	
+	}
+	//todo: Rounding off shmaddr
+	//If shmAddr is not given => shmaddr = NULL
+	if(!shmaddr){
+		for(int i=0; i<SHARED_MEM_REGIONS; i++){
+			//pass limit to get first available index
+			index = getFirstAvailableIndex(virtualAddress, currProc);
+			if(index != -1){
+				minVirtualAddress = currProc->sharedPages[index].virtualAddress;
+				//found virtual address of shared mem region and it is valid also
+				if(((int)virtualAddress + allSharedMemRegions[index].size*PGSIZE) <=  (int)minVirtualAddress)        
+          			break;
+			}
+			//Index = -1 => didnt find min shared Mem region to attach
+			else{
+				break;
+			}
+		}
+	}
+	//Shmaddr is given
+	else{
+	//shmaddr is not within limits of [HEAPLIMIT, KERNBASE]
+		if((int)shmaddr >= KERNBASE || (int)shmaddr < HEAPLIMIT) {
+		      return (void*)-1;
+		}
+		//shmflag & SHM_RND != 0
+		if(shmflag & SHM_RND){
+			virtualAddress = (void*)(shmaddr-((int)shmaddr%SHMLBA));
+		}
+		//shmflag & SHM_RND == 0
+		else{
+			virtualAddress = shmaddr;
+		}
+	}
+	//if base address + memory given exceeds the kernbase
+	if(((int)virtualAddress + allSharedMemRegions[index].size * PGSIZE) >= KERNBASE){
+		return (void*)-1;
+	}
+	return virtualAddress;
 }
