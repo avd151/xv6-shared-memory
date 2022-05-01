@@ -9,26 +9,7 @@ void shmdtTests();
 void shmctlTests();
 
 int
-main(int argc, char *argv[])
-{
-	/*
-	//Shmget
-	int shmid = shmget(1, 2,3);
-	if(shmid >= 0){
-		printf(1, "shmid = %d\n", shmid);
-	}else{
-		printf(1, "Error in shmget\n");
-	}
-
-	//Shmat
-	void* testAddr = (void*)0;
-	void* shmAddr = shmat(1,testAddr,2);
-       	if(shmAddr != (void*)-1){
-		printf(1, "In shmat \n");
-	}else{
-		printf(1, "error in shmat\n");	
-	}
-	*/
+main(int argc, char *argv[]){
 	shmgetTests();
 	shmatTests();
 	shmdtTests();
@@ -149,6 +130,24 @@ void shmatTests(){
 	else{
 		printf(1, "Failed\n");
 	}
+
+	//Read only access test
+	printf(1, "Read only access test: ");
+	test = (char*)shmat(atId2, (void *)(0), SHM_RDONLY);
+	if((int)test != -1) {
+		printf(1,"Allowed ! : Passed\n");
+	}
+	else {    
+		printf(1, "Not allowed ! : Failed\n");
+	}
+	printf(1, "Detaching readonly region : ");
+   	int testdt = shmdt(ptr);
+    	if(testdt < 0) {
+		printf(1, "Failed\n");
+	} 
+	else {
+       		printf(1,"Passed\n");
+    }
 	return;
 }
 
