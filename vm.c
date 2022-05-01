@@ -115,14 +115,6 @@ static struct kmap {
  { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices
 };
 
-//Shared Memory Region
-struct sharedMemRegion{
-	int key;
-	int size;
-	int shmid;
-	int valid; //0 = invalid, 1 = valid
-	void* physicalAddress[SHARED_MEM_REGIONS]; //array of physical addresses of shared pages of a region
-};
 struct sharedMemRegion allSharedMemRegions [SHARED_MEM_REGIONS];
 
 // Set up kernel part of a page table.
@@ -483,7 +475,9 @@ int getFirstAvailableIndex(){
 }
 
 void* shmat(int shmid, void* shmaddr, int shmflag){
-        if(shmid<0 || shmid>64){
+       	void* sharedMemAddr;
+	int index = -1;
+       	if(shmid<0 || shmid>64){
                 return (void*)-1;
         }
         if(!shmaddr){ //if shmaddr NULL, segmentr gets attached to first available address
@@ -500,4 +494,5 @@ void* shmat(int shmid, void* shmaddr, int shmflag){
         else{
                 //attach segment att the address (shmaddr-((prtdiff_t)shmaddr%SHMLBA))
         }
+	return sharedMemAddr;
 }
