@@ -134,8 +134,33 @@ sys_shmat(void){
 }
 
 //Shmdt
-
+void*
+sys_shmdt(void){
+	cprintf("In shmdt\n");
+	int shmAddr;
+	int ret;
+	void* retAddr;
+	ret = argint(0, &shmAddr);
+	if(ret < 0)return (void*)-1;
+	retAddr = shmdtUtil((void*)shmAddr);
+	return retAddr;
+}
 
 
 //Shmctl
-
+int
+sys_shmctl(void){
+	cprintf("In shmctl\n");
+	int shmid;
+	int command;
+	int buffer;
+	int ret;
+	ret = argint(0, &shmid);
+	if(ret < 0)return -1;
+   	ret = argint(1, &command);
+    if(ret < 0)return -1;
+    ret = argint(2, &buffer);
+    if(ret < 0)return -1;
+	ret = shmctlUtil(shmid, command, (void*)buffer);
+	return ret;
+}

@@ -23,8 +23,12 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+
+//Shared memory system calls
 int shmget(int, int, int);
 void* shmat(int, void*, int);
+int shmdt(void*);
+int shmctl(int, int, void*);
 
 // ulib.c
 int stat(const char*, struct stat*);

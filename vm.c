@@ -540,3 +540,113 @@ void* shmatUtil(int shmid, void* shmaddr, int shmflag){
 	}
 	return virtualAddress;
 }
+
+void* shmdtUtil(void* shmAddr){
+	void* ansRetAddr = (void*)0;
+	return ansRetAddr;
+}
+
+
+//shmctl
+//Control operations on shared memory according to cmd value
+
+int shmctlUtil(int shmid, int cmd, void* buff){
+	int index;
+	int currPerm;
+	int givenPerm;
+	//Check if shmid is within range
+	if(shmid > SHARED_MEM_REGIONS || shmid < 0)
+		return -1;
+	struct shmidDs * buffer = (struct shmidDs *)buff;
+
+	index = allSharedMemRegions[shmid].shmid;
+	//Check if invalid memory segment
+	if(index == -1){
+		return -1;
+	}
+	currPerm = allSharedMemRegions[shmid].buffer.sharedMemPerm.mode;
+	givenPerm = buffer->sharedMemPerm.mode;
+	switch(cmd){
+	case IPC_STAT:
+	case SHM_STAT:
+	//copy info from kernel DS associated with shmid into shmDS pointed to by buff
+		if(!buffer)
+			return -1;
+		else{
+		if((currPerm == READ_SHM)||(currPerm == RW_SHM)){
+			buffer->sharedMemSize = allSharedMemRegions[index].buffer.sharedMemSize;
+			buffer->nAttached = allSharedMemRegions[index].buffer.nAttached;
+			buffer->creatorPid = allSharedMemRegions[index].buffer.creatorPid;
+			buffer->lastModifiedPid = allSharedMemRegions[index].buffer.lastModifiedPid;
+			buffer->sharedMemPerm.mode = currPerm;	
+			return 0; //no error		
+		}
+		else{
+		return -1;
+		}
+		}
+		break;
+	
+	case SHM_STAT_ANY:
+		break;
+	case IPC_SET:
+		//write values of members of shmidDs pointed to by buf to kernel DS associated with this sharedMem
+		if(!buffer){
+			return -1;
+		}
+		else{
+			//Change mode in permissions to this buffer's mode
+			if((givenPerm == READ_SHM) || (givenPerm == RW_SHM)){
+				allSharedMemRegions[index].buffer.sharedMemPerm.mode = givenPerm;
+				return 0; //no error
+			}
+			else{
+			return -1;
+			}
+		}
+		break;
+	case IPC_RMID:
+	//Mark segment to be deleted - remove the shared memory segment
+		//Mark segment toDelete = 1 if nAttached becomes 0, and caller process deletes it
+		//Free all pages of current process
+		if(allSharedMemRegions[index].buffer.nAttached == 0){
+			for(int i = 0; i < allSharedMemRegions[index].size; i++){
+				char* currAddr = (char*)P2V(allSharedMemRegions[index].physicalAddress[i]);
+				kfree(currAddr);
+				allSharedMemRegions[index].physicalAddress[i] = (void*)0;
+			}
+		//Reset values to default
+		allSharedMemRegions[index].key = -1;
+		allSharedMemRegions[index].size = 0;
+		allSharedMemRegions[index].shmid = -1;
+		allSharedMemRegions[index].valid = 0;
+		allSharedMemRegions[index].toDelete = 0;
+		allSharedMemRegions[index].buffer.sharedMemPerm.key = -1;
+		allSharedMemRegions[index].buffer.sharedMemPerm.mode = 0;
+		allSharedMemRegions[index].buffer.nAttached = 0;
+		allSharedMemRegions[index].buffer.sharedMemSize = 0;
+		allSharedMemRegions[index].buffer.creatorPid = -1;
+		allSharedMemRegions[index].buffer.lastModifiedPid = -1;
+		}
+		else{
+		//mark shared memory to be deleted
+			allSharedMemRegions[index].toDelete = 1;
+		}
+		return 0;
+		break;
+	case IPC_INFO:
+		break;
+	case SHM_INFO:
+		break;
+	case SHM_LOCK:
+		break;
+	case SHM_UNLOCK:
+		break;
+	default:
+		//retVal = -1;
+		return -1;
+		break;
+	}
+	return -1;
+}
+
